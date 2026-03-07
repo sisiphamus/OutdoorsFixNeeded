@@ -61,7 +61,7 @@ When packaging Pepper as a `.exe` (e.g. via pkg, electron, or a Windows installe
 
 | Browser | MCP Used | Tools | How it connects |
 |---------|----------|-------|-----------------|
-| **Google Chrome** | `chrome-devtools-mcp` (`--autoConnect`) | `mcp__chrome__*` | Connects to already-running Chrome. No CDP port needed. All sessions/logins preserved automatically. |
+| **Google Chrome** | `chrome-devtools-mcp` (`--browserUrl`) | `mcp__chrome__*` | Connects via `--browserUrl http://127.0.0.1:9222` to AutomationProfile Chrome running on CDP port 9222. |
 | **Edge / Brave / Other** | `@playwright/mcp` via CDP | `mcp__playwright__*` | Requires browser running with `--remote-debugging-port=9222 --user-data-dir=<separate dir>` |
 
 **Current machine**: Preferred browser = **Google Chrome** → use `mcp__chrome__*` tools.
@@ -91,7 +91,7 @@ On startup, Pepper checks if CDP is reachable on port 9222. If not, it auto-laun
 This is self-healing on any machine: update the three fields at the top of this file and it works.
 
 ## How to Use
-- Call `mcp__playwright__browser_navigate` etc. — they connect to the AutomationProfile Chrome via CDP
+- Call `mcp__chrome__navigate_page` etc. — they connect to the AutomationProfile Chrome via CDP (port 9222)
 - The user is signed into their accounts in AutomationProfile
 - **Do NOT use `chromium.launch()`** — always connect via CDP to preserve sessions
 - **NEVER kill and relaunch Chrome** unless you relaunch with the correct `--user-data-dir`
@@ -112,7 +112,7 @@ Both servers are configured. The bot selects which tools to call based on the pr
   "mcpServers": {
     "chrome": {
       "command": "npx",
-      "args": ["chrome-devtools-mcp@latest", "--autoConnect"]
+      "args": ["chrome-devtools-mcp@latest", "--browserUrl", "http://127.0.0.1:9222"]
     },
     "playwright": {
       "command": "npx",
@@ -122,5 +122,5 @@ Both servers are configured. The bot selects which tools to call based on the pr
 }
 ```
 
-- **Chrome users**: bot calls `mcp__chrome__*` tools (autoConnect — no port setup needed)
+- **Chrome users**: bot calls `mcp__chrome__*` tools (`--browserUrl http://127.0.0.1:9222` — requires AutomationProfile Chrome running with CDP on port 9222)
 - **Edge/Brave users**: bot calls `mcp__playwright__*` tools (requires CDP on port 9222)

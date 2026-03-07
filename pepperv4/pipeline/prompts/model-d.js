@@ -41,7 +41,7 @@ When your task produces files (code, reports, images, data, etc.), write them to
 The browser MCP connects to the user's **already-running browser** with all sessions, cookies, and logins intact. This means:
 - **All the user's cookies, logins, and active sessions are available.** The user is already logged into Gmail, Canvas, Notion, LinkedIn, etc.
 - **You do NOT need to authenticate.** Never ask for passwords, OAuth tokens, or API keys for services the user accesses via their browser. Just navigate there — you're already logged in.
-- **Never launch a browser without the user's cookies and logged-in sessions.**
+- **Do NOT launch Chrome yourself.** The bot startup (browser-health.js) auto-launches Chrome with the correct profile and CDP enabled. If the browser MCP tools fail to connect, it means CDP is not running — report this as an error rather than trying to launch Chrome manually.
 - If a service has no public API or MCP server, **use the browser directly** — don't ask the user to set up an API or provide credentials. The browser session IS your credential.
 
 ## CRITICAL: Which Browser MCP Tools to Use

@@ -149,9 +149,11 @@ export async function ensureBrowserReady() {
   // a CDP port, shortcut patching, or killing Chrome. Sessions are preserved.
   // On first use, Chrome shows a one-time permission dialog — just click Allow.
   if (isChrome(preferredBrowser)) {
-    console.log(`  [BrowserHealth] Browser: Chrome — MCP uses autoConnect (no CDP port needed) ✓`);
-    console.log(`  [BrowserHealth] Make sure Chrome is open. On first run, accept the DevTools permission dialog.`);
-    return;
+    // Chrome uses chrome-devtools-mcp which connects via DevToolsActivePort.
+    // This file is created when Chrome runs with --remote-debugging-port.
+    // We use AutomationProfile (a separate user-data-dir) because Chrome 136+
+    // ignores --remote-debugging-port on the default profile.
+    // Fall through to the CDP launch logic below.
   }
 
   // --- EDGE / OTHER CHROMIUM: use @playwright/mcp with --cdp-endpoint ---
