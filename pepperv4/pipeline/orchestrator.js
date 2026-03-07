@@ -1,6 +1,7 @@
 // Pipeline orchestrator — coordinates A → B → C? → D → learn with feedback loops.
 
 import { runModel } from './model-runner.js';
+import { ensureBrowserReady } from '../../pepperv1/backend/src/browser-health.js';
 import { runPhaseA, runPhaseB } from './ml-runner.js';
 import { buildGapPrompt as modelBGapPrompt } from './prompts/model-b.js';
 import { buildPrompt as modelCPrompt } from './prompts/model-c.js';
@@ -208,6 +209,15 @@ export async function runPipeline(prompt, { onProgress, processKey, timeout, res
     // Add site context detected from the prompt
     const siteContext = detectSiteContext(prompt);
     const allMemoryContents = [...selectedContents, ...newContents, ...siteContext];
+
+    // If the task involves browser skills, pre-launch Chrome before Phase D runs
+    // so it's ready by the time the first mcp__chrome__* tool call is made.
+    const needsBrowser = allMemoryContents.some(m =>
+      m.category === 'skill' && (m.name === 'browser_use' || m.name === 'chrome_use')
+    ) || /\b(browser|navigate|gmail|website|chrome|web|email|linkedin|url|http)\b/i.test(prompt);
+    if (needsBrowser) {
+      ensureBrowserReady().catch(() => {});
+    }
     if (genomeOverride) {
       allMemoryContents.unshift({ name: 'agent-genome', category: 'evolution', content: genomeOverride });
     }

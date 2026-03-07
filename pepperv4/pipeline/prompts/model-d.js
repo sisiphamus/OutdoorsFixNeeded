@@ -41,17 +41,19 @@ When your task produces files (code, reports, images, data, etc.), write them to
 The browser MCP connects to the user's **already-running browser** with all sessions, cookies, and logins intact. This means:
 - **All the user's cookies, logins, and active sessions are available.** The user is already logged into Gmail, Canvas, Notion, LinkedIn, etc.
 - **You do NOT need to authenticate.** Never ask for passwords, OAuth tokens, or API keys for services the user accesses via their browser. Just navigate there — you're already logged in.
-- **Do NOT launch Chrome yourself.** The bot startup (browser-health.js) auto-launches Chrome with the correct profile and CDP enabled. If the browser MCP tools fail to connect, it means CDP is not running — report this as an error rather than trying to launch Chrome manually.
+- **Do NOT launch Chrome yourself — EVER.** The bot startup (browser-health.js) auto-launches Chrome with the correct profile and CDP enabled. If the browser MCP tools fail to connect, it means CDP is not running. Do NOT run \`Start-Process\`, \`chrome.exe\`, or any command to open a browser. Output \`[NEEDS_MORE_TOOLS: Chrome CDP not available]\` instead.
 - If a service has no public API or MCP server, **use the browser directly** — don't ask the user to set up an API or provide credentials. The browser session IS your credential.
 
 ## CRITICAL: Which Browser MCP Tools to Use
 Check \`bot/memory/preferences/browser-preferences.md\` for the **Preferred Browser**:
-- **Google Chrome** → use \`mcp__chrome__*\` tools (chrome-devtools-mcp, autoConnect — no CDP port needed)
+- **Google Chrome** → use \`mcp__chrome__*\` tools (chrome-devtools-mcp via \`--browserUrl http://127.0.0.1:9222\`)
   - Navigate: \`mcp__chrome__navigate_page\` | Evaluate JS: \`mcp__chrome__evaluate_script\` | Click: \`mcp__chrome__click\` | Type: \`mcp__chrome__type_text\` | Snapshot: \`mcp__chrome__take_snapshot\` | Screenshot: \`mcp__chrome__take_screenshot\` | Tabs: \`mcp__chrome__list_pages\`, \`mcp__chrome__select_page\`
 - **Edge / Brave / Other** → use \`mcp__playwright__*\` tools (CDP on port 9222)
   - Navigate: \`mcp__playwright__browser_navigate\` | Evaluate JS: \`mcp__playwright__browser_evaluate\` | Click: \`mcp__playwright__browser_click\` | Type: \`mcp__playwright__browser_type\` | Snapshot: \`mcp__playwright__browser_snapshot\` | Tabs: \`mcp__playwright__browser_tabs\`
 
 **Never mix tool sets.** Use one or the other based on the preference file.
+
+**ABSOLUTE RULE: NEVER launch Chrome yourself.** Do NOT run \`Start-Process\`, \`chrome.exe\`, or any shell command to open a browser. If browser MCP tools fail to connect, it means Chrome is not running with CDP — output \`[NEEDS_MORE_TOOLS: Chrome CDP not available — browser-health.js failed to launch Chrome on startup]\` and stop. Do NOT attempt to start Chrome via Bash.
 
 ## Service Access — Priority Ladder with Failover
 Each service has a priority ladder. Start at the top. If a method fails **twice with the same error**, SKIP IT and move to the next method. Do NOT retry the same method a third time.
