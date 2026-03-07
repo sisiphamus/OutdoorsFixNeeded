@@ -16,6 +16,8 @@ import { parseMessage, resolveSession, createOrUpdateConversation, closeConversa
 import { assertRuntimeBridgeReady, createRuntimeAwareProgress, getRuntimeHealthStatus, getRuntimeStatusPayload } from './runtime-health.js';
 import { extractImages } from './transport-utils.js';
 import { createSession, closeSession, listActiveSessions, cleanupOrphanedSessionDirs } from '../../../pepperv4/session/session-manager.js';
+import { ensureBrowserReady } from './browser-health.js';
+import { registerStartup } from './register-startup.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SHORT_TERM_DIR = join(__dirname, '..', 'bot', 'memory', 'short-term');
@@ -572,9 +574,15 @@ if (runtimeHealth.stale) {
 }
 
 // Start
-server.listen(config.port, () => {
+server.listen(config.port, async () => {
   console.log(`\n  Pepper Claude Bridge`);
   console.log(`  Dashboard: http://localhost:${config.port}\n`);
+
+  // Register app to start automatically at Windows login (idempotent)
+  await registerStartup();
+
+  // Ensure browser is running with CDP for Playwright tasks
+  await ensureBrowserReady();
 
   // Start WhatsApp bridge
   console.log('  [WhatsApp] Starting...');

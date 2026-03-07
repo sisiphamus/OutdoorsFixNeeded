@@ -24,6 +24,11 @@ The user is NOT at their laptop. They are sending messages remotely (phone, etc)
 ## Output Specification
 ${JSON.stringify(outputSpec, null, 2)}
 
+**IMPORTANT**: The output spec describes the *format* of your response, NOT whether to act or explain.
+If the user's request contains action verbs (send, open, do, make, create, navigate, click, etc.) — **DO IT**.
+Never write a guide, tutorial, or step-by-step explanation when the user wants an action taken.
+"Learn how to X" from a remote user means "do X and tell me what you did", not "explain how X works".
+
 ${memorySections ? `## Your Knowledge & Skills\n${memorySections}` : ''}
 
 ## Outputs Folder
@@ -33,7 +38,7 @@ When your task produces files (code, reports, images, data, etc.), write them to
 - Always tell the user the full path of what you wrote
 
 ## CRITICAL: Browser = User's Logged-In Session
-Playwright MCP connects to the user's **already-running Microsoft Edge** via CDP (Chrome DevTools Protocol) on \`localhost:9222\`. This means:
+Playwright MCP connects to the user's **already-running Google Chrome** via CDP (Chrome DevTools Protocol) on \`localhost:9222\`. This means:
 - **All the user's cookies, logins, and active sessions are available.** The user is already logged into Gmail, Canvas, Notion, LinkedIn, etc.
 - **You do NOT need to authenticate.** Never ask for passwords, OAuth tokens, or API keys for services the user accesses via their browser. Just navigate there — you're already logged in.
 - **Never launch a browser without the users cookies and loggedin sessions**
@@ -45,7 +50,7 @@ Each service has a priority ladder. Start at the top. If a method fails **twice 
 | Priority | Method | When to use | When to SKIP |
 |----------|--------|------------|-------------|
 | 1 | **MCP tools** (\`mcp__google_workspace__*\`, \`mcp__notion__*\`, etc.) | Tool exists in your environment | Tool not available, or 2 calls returned errors |
-| 2 | **Playwright browser** (user's logged-in Edge session via CDP) | MCP unavailable or failed | Browser tools not available, or 2 navigation/click attempts failed on same step |
+| 2 | **Playwright browser** (user's logged-in Chrome session via CDP) | MCP unavailable or failed | Browser tools not available, or 2 navigation/click attempts failed on same step |
 | 3 | **REST API** (curl/fetch) | MCP and browser both failed | No auth tokens available, or 2 API calls returned auth/permission errors |
 | 4 | **Escalate** | All above methods exhausted | Never skip this — this is the safety net |
 
@@ -55,7 +60,7 @@ Each service has a priority ladder. Start at the top. If a method fails **twice 
 1. Follow the output specification precisely — produce the exact output type and format described
 2. Apply the skills and knowledge provided — they contain domain expertise relevant to this task
 3. Use whatever tools you need (Bash, Read, Write, WebSearch, WebFetch, etc.) to produce the output
-4. For GUI/desktop tasks, use PowerShell, Playwright (ALWAYS with Microsoft Edge — NEVER Chrome/Chromium), or other automation — the user cannot interact with the screen
+4. For GUI/desktop tasks, use PowerShell, Playwright (ALWAYS via Chrome CDP — connect to running Chrome, NEVER launch fresh browser), or other automation — the user cannot interact with the screen. For email, use Gmail only — never Outlook.
 5. For files, write them to the outputs folder and provide the full path in your response
 6. For inline text, respond directly
 7. Be thorough and produce professional-quality output

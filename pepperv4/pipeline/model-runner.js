@@ -2,8 +2,16 @@
 // Built from scratch using Node's child_process.spawn.
 
 import { spawn } from 'child_process';
+import { existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { config } from '../config.js';
 import { register, unregister, emitActivity } from '../util/process-registry.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// .mcp.json lives in pepperv1/backend/ — two levels up from pepperv4/pipeline/
+const MCP_CONFIG_PATH = join(__dirname, '..', '..', 'pepperv1', 'backend', '.mcp.json');
 
 const MODEL_MAP = {
   opus: 'claude-opus-4-20250514',
@@ -49,6 +57,11 @@ export function runModel({
   return new Promise((resolve, reject) => {
     const cmd = config.claudeCommand || 'claude';
     const args = [...(claudeArgs || config.claudeArgs || ['--print']), '--output-format', 'stream-json', '--verbose'];
+
+    // Inject MCP config so Claude always has browser tools, regardless of cwd
+    if (existsSync(MCP_CONFIG_PATH)) {
+      args.push('--mcp-config', MCP_CONFIG_PATH);
+    }
 
     // For large system prompts, prepend instructions into the user prompt via stdin
     // instead of passing as a CLI arg to avoid Windows ENAMETOOLONG errors.

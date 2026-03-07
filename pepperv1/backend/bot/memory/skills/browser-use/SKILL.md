@@ -84,8 +84,8 @@ DOM selectors, class names, and page structure change without warning. **Never h
 
 ### Gmail (mail.google.com)
 - **Prefer MCP** (`mcp__google_workspace__*`) when available
-- **Compose**: Navigate to `/mail/u/1/#inbox?compose=new`, snapshot to file, grep for "To recipients", "Subject", "Message Body", "Send"
-- **Accounts**: `/u/0/` = personal, `/u/1/` = school (default)
+- **Compose**: Navigate to `/mail/u/N/#inbox?compose=new` — find correct N by checking `document.title` on the Gmail page, then snapshot to file, grep for "To recipients", "Subject", "Message Body", "Send"
+- **Accounts**: `/u/N/` index varies by sign-in order. Check `document.title` or page avatar to confirm. See `bot/memory/sites/gmail.md` for full account list.
 - **Accessibility tree is massive.** Always snapshot to file + grep.
 
 ### Google Calendar

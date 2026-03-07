@@ -26,8 +26,10 @@ export function kill(key) {
         if (process.platform === 'win32') {
           // On Windows, proc.kill() only kills the shell wrapper, not the child tree.
           // taskkill /T /F kills the entire process tree.
-          spawn('taskkill', ['/T', '/F', '/PID', String(entry.proc.pid)], {
-            shell: true,
+          // Use full path to avoid shell: true (which requires cmd.exe and fails in Git Bash).
+          const taskkill = `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\taskkill.exe`;
+          spawn(taskkill, ['/T', '/F', '/PID', String(entry.proc.pid)], {
+            shell: false,
             stdio: 'ignore',
             detached: true,
           });

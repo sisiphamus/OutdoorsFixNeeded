@@ -9,20 +9,19 @@ description: Chrome-specific browser automation knowledge. Covers Chrome profile
 
 Chrome must be launched with `--remote-debugging-port=9222` for Playwright/CDP to connect. This does NOT close existing tabs or windows. It simply opens a WebSocket endpoint for automation tools.
 
-### Windows Setup (Persistent)
-Add the flag to Chrome's desktop shortcut:
+### Windows Setup (Automatic)
+Pepper auto-patches Chrome shortcuts on startup via `browser-health.js`. No manual steps needed.
+
+If Chrome is not running with CDP when Pepper starts, it will:
+1. Patch the Chrome desktop and Start Menu shortcuts to permanently include `--remote-debugging-port=9222`
+2. Launch Chrome with that flag
+
+To verify it worked: navigate to `http://localhost:9222/json/version` — you should see a JSON response.
+
+**Manual fallback** (if auto-patch fails):
 1. Right-click Chrome shortcut > Properties
 2. In "Target", append: `--remote-debugging-port=9222`
-3. Full example: `"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222`
-
-Or create a registry entry for always-on debugging:
-```powershell
-# Add to Chrome's launch args via registry (HKCU, user-scoped)
-$regPath = "HKCU:\Software\Google\Chrome\Application"
-# Simpler: just modify the shortcut target
-```
-
-The shortcut method is preferred because it is visible and easy to reverse.
+3. Restart Chrome
 
 ### macOS Setup
 ```bash

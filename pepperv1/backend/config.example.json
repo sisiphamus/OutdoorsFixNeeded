@@ -1,7 +1,7 @@
 {
   "port": 3457,
   "allowedNumbers": [
-    "15555555555"
+    "19125854914"
   ],
   "allowAllNumbers": false,
   "claudeCommand": "claude",
@@ -15,7 +15,7 @@
   "workingDirectory": "C:\\\\path\\\\to\\\\your\\\\workspace",
   "codeWorkingDirectory": "C:\\\\path\\\\to\\\\your\\\\workspace",
   "prefix": "!claude ",
-  "telegramToken": "",
+  "telegramToken": "YOUR_TELEGRAM_BOT_TOKEN",
   "telegramPrefix": "",
   "telegramAllowedIds": [],
   "smsGatewayUrl": "",
