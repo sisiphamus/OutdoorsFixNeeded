@@ -1,13 +1,18 @@
 ---
 name: chrome_use
-description: Chrome-specific browser automation knowledge. Covers Chrome profiles, remote debugging port setup, and connecting via CDP without disrupting existing tabs.
+description: Chrome-specific browser automation. For Google Chrome, use mcp__chrome__* tools (chrome-devtools-mcp with autoConnect) — NOT Playwright. Playwright is for Edge/Brave/Other browsers only.
 ---
 
 # Chrome Use
 
-## Remote Debugging Setup
+## MCP Tool to Use for Chrome
+**Use `mcp__chrome__*` tools** (chrome-devtools-mcp with `--autoConnect`). These connect to the already-running Chrome instance with all sessions, cookies, and logins intact. No CDP port setup needed.
 
-Chrome must be launched with `--remote-debugging-port=9222` for Playwright/CDP to connect. This does NOT close existing tabs or windows. It simply opens a WebSocket endpoint for automation tools.
+Do NOT use `mcp__playwright__*` for Chrome — Playwright uses CDP isolation which breaks active sessions.
+
+## Remote Debugging (Edge/Brave/Other only)
+
+For non-Chrome browsers, CDP via `--remote-debugging-port=9222` is needed. This does NOT close existing tabs or windows.
 
 ### Windows Setup (Automatic)
 Pepper auto-patches Chrome shortcuts on startup via `browser-health.js`. No manual steps needed.
@@ -79,8 +84,13 @@ Check `http://localhost:9222/json/version` -- the `User-Data-Dir` field shows wh
 - Some users have Chrome profiles tied to different Google accounts. The profile determines which Gmail, Drive, Calendar, etc. you access.
 - Extensions are per-profile. Ad blockers or privacy extensions in one profile may interfere with automation.
 
-## Connecting via Playwright
+## Connecting to Chrome (MCP tools — preferred)
 
+Use `mcp__chrome__*` tools directly. No code setup needed — chrome-devtools-mcp autoConnects to the running Chrome and exposes all tabs and sessions.
+
+## Connecting to Chrome (code/script — fallback only)
+
+If writing a script (not using MCP tools), connect via CDP:
 ```javascript
 // Connect to running Chrome with CDP
 const browser = await chromium.connectOverCDP('http://localhost:9222');
@@ -91,7 +101,6 @@ const pages = context.pages(); // All open tabs
 Key rules:
 - **NEVER** use `chromium.launch()` -- this creates a fresh browser without the user's session
 - **ALWAYS** use `chromium.connectOverCDP()` to attach to the running instance
-- `browser.contexts()[0]` gives you the user's actual browsing context with all their cookies and logins
 
 ## Chrome vs Edge vs Other Chromium Browsers
 

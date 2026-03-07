@@ -1,16 +1,23 @@
 ---
 name: browser_use
-description: Navigate and interact with websites using Playwright MCP. Prefer JS evaluation over snapshots. Use browser_evaluate to find and click elements by text, browser_snapshot only when exploring unknown pages. Websites change constantly so verify before acting.
+description: Navigate and interact with websites using the correct browser MCP. Check browser-preferences.md for the preferred browser — use mcp__chrome__* for Google Chrome, mcp__playwright__* for Edge/Brave/Other. Prefer JS evaluation over snapshots.
 ---
 
 # Browser Use
 
+## FIRST: Check Which MCP to Use
+Read `bot/memory/preferences/browser-preferences.md` to find the preferred browser:
+- **Google Chrome** → use `mcp__chrome__*` tools (`mcp__chrome__navigate_page`, `mcp__chrome__evaluate_script`, `mcp__chrome__click`, `mcp__chrome__take_snapshot`, `mcp__chrome__type_text`, `mcp__chrome__press_key`, `mcp__chrome__list_pages`, `mcp__chrome__select_page`, `mcp__chrome__take_screenshot`)
+- **Edge / Brave / Other** → use `mcp__playwright__*` tools (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_evaluate`, `mcp__playwright__browser_click`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_type`, `mcp__playwright__browser_press_key`, `mcp__playwright__browser_tabs`, `mcp__playwright__browser_take_screenshot`)
+
+**Current machine: Google Chrome → use `mcp__chrome__*`**
+
 ## Core Principle
-**Evaluate first, snapshot second, screenshot last.** Most browser tasks can be done with `browser_evaluate` running JS directly on the page. Snapshots (accessibility trees) are for exploration. Screenshots are for when the DOM lies.
+**Evaluate first, snapshot second, screenshot last.** Most browser tasks can be done with `evaluate_script`/`browser_evaluate` running JS directly on the page. Snapshots (accessibility trees) are for exploration. Screenshots are for when the DOM lies.
 
 ## Method Priority
 
-### 1. `browser_evaluate` (Preferred for known actions)
+### 1. `evaluate_script` / `browser_evaluate` (Preferred for known actions)
 Run JS directly on the page. No snapshot needed. Near-zero tokens.
 
 ```javascript
@@ -40,25 +47,22 @@ document.querySelector('h1')?.textContent?.trim() || 'no h1 found';
 
 **Limitations**: React/SPA state changes may not trigger from raw `.value =` assignment. If a form doesn't respond, use `browser_type` or `browser_fill_form` instead. Some sites use Shadow DOM, which requires `el.shadowRoot.querySelector(...)`.
 
-### 2. `browser_snapshot` (For exploration or ref-based clicking)
-Returns an accessibility tree with numbered `ref` elements. Needed when:
-- You don't know what's on the page
-- `browser_evaluate` can't find the element (Shadow DOM, iframes, complex widgets)
-- You need Playwright's built-in `browser_click` with a ref number
+### 2. Snapshot (For exploration or ref-based clicking)
+- **Chrome**: `mcp__chrome__take_snapshot` — returns accessibility tree
+- **Edge/Other**: `mcp__playwright__browser_snapshot` — use `filename` param always
 
-**Always save to file, never inline:**
-```
-browser_snapshot(filename="/tmp/snap.txt")
-Grep snap.txt for the element you need
-browser_click(ref=NUMBER)
-```
+Needed when:
+- You don't know what's on the page
+- `evaluate_script` can't find the element (Shadow DOM, iframes, complex widgets)
 
 **Rules:**
 - Every click needs a FRESH snapshot. Refs change on every page load.
 - Never reuse ref numbers across navigations.
 - Grep for keywords, don't read the whole tree.
 
-### 3. `browser_take_screenshot` (When DOM lies)
+### 3. Screenshot (When DOM lies)
+- **Chrome**: `mcp__chrome__take_screenshot`
+- **Edge/Other**: `mcp__playwright__browser_take_screenshot`
 Actual pixel screenshot. Use when:
 - Page uses canvas rendering (maps, charts, games)
 - Visual layout matters (checking if something is actually visible vs hidden off-screen)
