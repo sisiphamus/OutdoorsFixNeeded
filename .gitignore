@@ -23,10 +23,17 @@ nul
 # Workspace artifacts: keep folder shells, ignore contents
 bot/outputs/**
 !bot/outputs/.gitkeep
-pepperv1/backend/bot/logs/**
-!pepperv1/backend/bot/logs/.gitkeep
-pepperv1/backend/bot/memory/knowledge/**
-!pepperv1/backend/bot/memory/knowledge/.gitkeep
-pepperv1/backend/bot/memory/preferences/**
-!pepperv1/backend/bot/memory/preferences/.gitkeep
-!pepperv1/backend/bot/memory/preferences/browser-preferences.md
+outdoorsv1/backend/bot/logs/**
+!outdoorsv1/backend/bot/logs/.gitkeep
+outdoorsv1/backend/bot/memory/knowledge/**
+!outdoorsv1/backend/bot/memory/knowledge/.gitkeep
+outdoorsv1/backend/bot/memory/preferences/**
+!outdoorsv1/backend/bot/memory/preferences/.gitkeep
+
+# Personal data - conversations, chat sessions, user profile
+outdoorsv1/backend/bot/memory/conversations.json
+outdoorsv1/backend/bot/memory/chat-sessions.json
+outdoorsv1/backend/bot/memory/wa-chat-sessions.json
+
+# Claude project memory (personal)
+.claude/

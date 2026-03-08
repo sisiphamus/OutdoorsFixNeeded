@@ -1,0 +1,18 @@
+{
+  "port": 3457,
+  "allowedNumbers": [
+    "1XXXXXXXXXX"
+  ],
+  "allowAllNumbers": false,
+  "claudeCommand": "claude",
+  "claudeArgs": [
+    "--print",
+    "--dangerously-skip-permissions"
+  ],
+  "maxResponseLength": 4000,
+  "messageTimeout": 120000,
+  "rateLimitPerMinute": 10,
+  "workingDirectory": "C:\\\\path\\\\to\\\\your\\\\workspace",
+  "codeWorkingDirectory": "C:\\\\path\\\\to\\\\your\\\\workspace",
+  "prefix": "!claude "
+}
