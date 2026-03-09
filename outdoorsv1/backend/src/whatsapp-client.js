@@ -23,6 +23,43 @@ const LOGS_DIR = join(__dirname, '..', 'bot', 'logs');
 
 const logger = pino({ level: 'silent' });
 
+async function sendOnboardingWelcome(sock, groupJid) {
+  try {
+    const msg = formatOutdoorsResponse(
+      `Hey I'm Outdoors 🌲\n\n` +
+      `Quick heads up — when you see the plant animation (🌱🌿🌳) on your message, that means I'm thinking.\n\n` +
+      `Gonna ask a few quick questions so I can do my job better. Everything stays on your device and you can change any of it later.\n\n` +
+      `So what's your name and when's your birthday? Are you a student or working rn? If you're in school — what school, class of ____, and what's your major? ` +
+      `What's your favorite color? And what are your career plans and greatest aspiration?`
+    );
+    await sock.sendMessage(groupJid, { text: msg });
+  } catch (err) {
+    console.log('[WhatsApp] Failed to send onboarding welcome:', err.message);
+    await sock.sendMessage(groupJid, { text: 'Outdoors is ready! Send a message here to get started.' }).catch(() => {});
+  }
+}
+
+async function createOutdoorsGroup(sock, emitLog) {
+  try {
+    const group = await sock.groupCreate('Outdoors 🌲🏔️', []);
+    const groupJid = group.id;
+    config.outdoorsGroupJid = groupJid;
+    saveConfig(config);
+    console.log(`[WhatsApp] Created Outdoors group: ${groupJid}`);
+    emitLog('group_created', { groupJid, message: 'Outdoors group created — open it in WhatsApp to start chatting' });
+
+    await sock.groupUpdateDescription(groupJid, 'Send messages here to chat with Outdoors.').catch(() => {});
+
+    // Send hardcoded welcome + Round 1 instantly (no LLM call)
+    if (isOnboardingNeeded()) {
+      await sendOnboardingWelcome(sock, groupJid);
+    }
+  } catch (err) {
+    console.log('[WhatsApp] Failed to create Outdoors group:', err.message);
+    emitLog('group_create_error', { error: err.message });
+  }
+}
+
 let sock = null;
 let io = null;
 let connectionStatus = 'disconnected';
@@ -38,7 +75,7 @@ const processingIds = new Set();
 // Module-scoped so it survives reconnects — Baileys needs prior messages to retry
 // sender-key distribution, and a fresh Map on reconnect causes silent decryption failures.
 const messageStore = new Map();
-const MAX_STORE_SIZE = 1000;
+const MAX_STORE_SIZE = 5000;
 
 function storeMessage(id, message) {
   messageStore.set(id, message);
@@ -65,6 +102,7 @@ function getStatus() {
 }
 
 async function startWhatsApp() {
+  mkdirSync(config.authDir, { recursive: true });
   const { state, saveCreds } = await useMultiFileAuthState(config.authDir);
 
   let version;
@@ -87,13 +125,18 @@ async function startWhatsApp() {
     logger,
     generateHighQualityLinkPreview: false,
     markOnlineOnConnect: true,
+    keepAliveIntervalMs: 15_000,
+    retryRequestDelayMs: 250,
     getMessage: async (key) => {
       const stored = messageStore.get(key.id);
       return stored || undefined;
     },
   });
 
-  sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('creds.update', async () => {
+    try { await saveCreds(); }
+    catch (err) { console.log('[wa] Failed to save creds:', err.message); }
+  });
 
   sock.ev.on('connection.update', (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -148,23 +191,7 @@ async function startWhatsApp() {
       console.log('[wa] Connected as:', JSON.stringify(sock.user));
 
       if (!config.outdoorsGroupJid) {
-        // Auto-create a solo "Outdoors" group for self-messaging
-        (async () => {
-          try {
-            const group = await sock.groupCreate('Outdoors 🌲🏔️', []);
-            const groupJid = group.id;
-            config.outdoorsGroupJid = groupJid;
-            saveConfig(config);
-            console.log(`[WhatsApp] Created Outdoors group: ${groupJid}`);
-            emitLog('group_created', { groupJid, message: 'Outdoors group created — open it in WhatsApp to start chatting' });
-
-            await sock.groupUpdateDescription(groupJid, 'Send messages here to chat with Outdoors.').catch(() => {});
-            await sock.sendMessage(groupJid, { text: 'Outdoors is ready! Send a message here to get started.' }).catch(() => {});
-          } catch (err) {
-            console.log('[WhatsApp] Failed to create Outdoors group:', err.message);
-            emitLog('group_create_error', { error: err.message });
-          }
-        })();
+        createOutdoorsGroup(sock, emitLog);
       } else {
         // Rename existing group to Outdoors
         (async () => {
@@ -172,8 +199,14 @@ async function startWhatsApp() {
             await sock.groupUpdateSubject(config.outdoorsGroupJid, 'Outdoors 🌲🏔️');
             await sock.groupUpdateDescription(config.outdoorsGroupJid, 'Send messages here to chat with Outdoors.').catch(() => {});
             console.log('[WhatsApp] Renamed group to Outdoors 🌲🏔️');
+            if (isOnboardingNeeded()) {
+              await sendOnboardingWelcome(sock, config.outdoorsGroupJid);
+            }
           } catch (err) {
-            console.log('[WhatsApp] Failed to rename group:', err.message);
+            console.log('[WhatsApp] Failed to rename group:', err.message, '— creating new group');
+            config.outdoorsGroupJid = '';
+            saveConfig(config);
+            createOutdoorsGroup(sock, emitLog);
           }
         })();
       }
@@ -202,6 +235,9 @@ async function startWhatsApp() {
         console.log(`[wa:skip] No message content for ${msgId} from ${msg.key.remoteJid} (likely decryption failure)`);
         continue;
       }
+
+      // Store incoming messages so getMessage can fulfill group retry requests
+      if (msg.message) storeMessage(msgId, msg.message);
 
       // Skip messages sent by us UNLESS it's a group (solo group for self-messaging)
       const remoteJid = msg.key.remoteJid;
@@ -270,18 +306,19 @@ async function startWhatsApp() {
                 if (onboardingResult.done) {
                   emitLog('onboarding_complete', { jid, message: 'User profile created' });
                   // Send parallel session commands guide
-                  const commandsMsg = `btw you can run multiple conversations at once:\n\n` +
-                    `- start a numbered convo: *1 build me a site*\n` +
-                    `- send to that convo: *1 make the header blue*\n` +
-                    `- start another: *2 research competitors*\n` +
-                    `- pause a convo: *1 pause*\n` +
-                    `- close a convo: *1 close*\n` +
-                    `- start fresh: */new*`;
+                  const commandsText = `you can run multiple conversations at once:\n\n` +
+                    `- start a convo: *1 email my friend about friday*\n` +
+                    `- reply to it: *1 tell them I'll be late*\n` +
+                    `- start another: *2 research for my econ project*\n` +
+                    `- pause one: *1 pause*\n` +
+                    `- done with one: *1 new*`;
+                  const commandsMsg = formatOutdoorsResponse(commandsText);
                   const cmdSent = await sendWithRetry(jid, { text: commandsMsg });
                   if (cmdSent?.key?.id) {
                     botSentIds.add(cmdSent.key.id);
                     storeMessage(cmdSent.key.id, cmdSent.message);
                   }
+
                 }
               } catch (err) {
                 console.log('[onboarding_error] Full:', err);
@@ -317,9 +354,21 @@ async function startWhatsApp() {
 
         if (!result) {
           console.log(`[wa:no_result] handleMessage returned null for ${msgId} from ${jid}`);
+          try {
+            const fallback = formatOutdoorsResponse('Something went wrong \u2014 I didn\'t get a response. Try again?');
+            const sent = await sendWithRetry(jid, { text: fallback }, { quoted: msg });
+            if (sent?.key?.id) { botSentIds.add(sent.key.id); storeMessage(sent.key.id, sent.message); }
+          } catch {}
+        } else if (result && !result.response) {
+          try {
+            const fallback = formatOutdoorsResponse('I processed your message but the response was empty. Try again?');
+            const sent = await sendWithRetry(result.jid, { text: fallback }, { quoted: msg });
+            if (sent?.key?.id) { botSentIds.add(sent.key.id); storeMessage(sent.key.id, sent.message); }
+          } catch {}
         }
 
         if (result && result.response) {
+          let sendSucceeded = false;
           try {
             const { images, cleanText } = extractImages(result.response);
             const quoteOpts = { quoted: msg };
@@ -362,9 +411,19 @@ async function startWhatsApp() {
                 storeMessage(sent.key.id, sent.message);
               }
             }
+            sendSucceeded = true;
             emitLog('sent', { to: result.sender, responseLength: result.response.length, imageCount: images.length });
           } catch (err) {
             emitLog('send_error', { to: result.sender, error: err.message });
+            // Last-resort: retry raw text without quoting or formatting
+            try {
+              const sent = await sendWithRetry(result.jid, { text: result.response.slice(0, 4000) });
+              if (sent?.key?.id) { botSentIds.add(sent.key.id); storeMessage(sent.key.id, sent.message); }
+              sendSucceeded = true;
+              emitLog('sent_fallback', { to: result.sender, responseLength: result.response.length });
+            } catch (retryErr) {
+              emitLog('send_error_final', { to: result.sender, error: retryErr.message });
+            }
           }
 
           // Persist conversation log
@@ -380,6 +439,7 @@ async function startWhatsApp() {
               timestamp: new Date().toISOString(),
               fullEvents: result.fullEvents || [],
               response: result.response,
+              sendSucceeded,
               runtimeFingerprint: result.runtimeFingerprint || null,
               runtimeStaleDetected: !!result.runtimeStaleDetected,
               runtimeChangedFiles: result.runtimeChangedFiles || [],

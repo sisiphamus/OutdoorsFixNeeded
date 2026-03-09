@@ -42,7 +42,7 @@ When the executor failed, analyze WHY it failed and write memory that teaches SM
 ### What to write:
 - **Which method failed and why** — so future executors skip it immediately instead of wasting turns rediscovering the failure
 - **The working alternative** — if MCP failed but Playwright worked, say that explicitly
-- **The priority ladder for this service** — e.g., "For Gmail: use MCP google_workspace tools first. If unavailable, use Playwright to navigate mail.google.com. Do NOT use custom scripts or curl — Gmail's API requires OAuth."
+- **The priority ladder for this service** — e.g., "For Gmail: use Playwright to navigate mail.google.com. Do NOT use custom scripts or curl — Gmail requires browser sessions."
 - **What [NEEDS_MORE_TOOLS: ...] marker to emit** if no method worked
 
 ### What NEVER to write:

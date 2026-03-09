@@ -304,8 +304,8 @@ io.on('connection', async (socket) => {
       parsed = parseMessage(trimmed || 'What is this image?');
     }
 
-    // Handle close command
-    if (parsed.command === 'close') {
+    // Handle new command (close a numbered conversation)
+    if (parsed.command === 'new') {
       const closed = closeConversation(parsed.number);
       clearClarificationState(`web:conv:${parsed.number}`);
       socket.emit('chat_response', closed

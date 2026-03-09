@@ -19,7 +19,13 @@ outdoorsv4/ml/models/   serialized TF-IDF vectorizers + classifiers
 
 The routine work (classification, retrieval) doesn't need frontier models. Save those for where they matter. Two API calls became two local inferences -- faster, cheaper, and honestly more reliable for these specific tasks.
 
+## Setup
+
+Prerequisites: Node.js 18+, Python 3.9+, [Claude CLI](https://docs.anthropic.com/en/docs/claude-code/overview)
+
 ```bash
-pip install scikit-learn joblib numpy
-cd outdoorsv1/backend && npm install && node server.js
+node setup.js
+cd outdoorsv1/backend && node server.js
 ```
+
+The setup script installs all dependencies, configures MCP servers (Gmail, Calendar, Drive, Playwright), and sets up the backend. First time using Google services, Claude will prompt you to sign in.

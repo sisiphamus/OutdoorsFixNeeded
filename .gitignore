@@ -6,6 +6,7 @@ dist/
 # Sensitive configuration and authentication
 config.json
 .mcp.json
+.claude.json
 auth_state/
 .env
 *.env

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const INFER_SCRIPT = join(__dirname, '../ml/infer.py');
 const PYTHON = process.env.OUTDOORS_PYTHON || 'python';
-const CALL_TIMEOUT_MS = 10000;
+const CALL_TIMEOUT_MS = 30000;
 const POOL_SIZE = 2;
 
 class MLWorker {
@@ -117,6 +117,16 @@ function getWorker() {
   nextIdx++;
   return worker;
 }
+
+// Pre-warm workers on import so the model is loaded before the first real request
+(async () => {
+  try {
+    await getWorker().call({ task: 'phase_a', prompt: 'warmup' });
+    process.stderr.write('[ml-runner] Pre-warm complete\n');
+  } catch {
+    process.stderr.write('[ml-runner] Pre-warm failed (will retry on first real call)\n');
+  }
+})();
 
 // ── Public API ──────────────────────────────────────────────────────────────
 

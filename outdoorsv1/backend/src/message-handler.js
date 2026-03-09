@@ -167,8 +167,8 @@ export async function handleMessage(message, emitLog) {
   // Parse for numbered conversation prefix
   const parsed = parseMessage(prompt);
 
-  // Handle close command
-  if (parsed.command === 'close') {
+  // Handle new command (close a numbered conversation)
+  if (parsed.command === 'new') {
     const closed = closeConversation(parsed.number);
     clearClarificationState(`wa:conv:${parsed.number}`);
     const response = closed
@@ -193,19 +193,23 @@ export async function handleMessage(message, emitLog) {
 
   // Handle pause command (same as stop, friendlier message)
   if (parsed.command === 'pause') {
-    const processKey = parsed.number !== null ? `wa:conv:${parsed.number}` : `wa:chat:${jid}`;
-    killProcess(processKey);
-    clearClarificationState(processKey);
-    const label = parsed.number !== null ? `Conversation #${parsed.number}` : 'Conversation';
-    return { response: `${label} paused. Send a message to continue.`, sender, prompt, jid };
-  }
-
-  // Handle new command (clear session, start fresh)
-  if (parsed.command === 'new') {
-    chatSessions.delete(jid);
-    saveChatSessions();
-    clearClarificationState(`wa:chat:${jid}`);
-    return { response: 'Session cleared. Next message starts a fresh conversation.', sender, prompt, jid };
+    let killed = false;
+    if (parsed.number !== null) {
+      killed = killProcess(`wa:conv:${parsed.number}`);
+      clearClarificationState(`wa:conv:${parsed.number}`);
+    } else {
+      // Kill all active processes for this chat (numbered + unnumbered)
+      const { numbered, unnumbered } = getActiveProcessSummary();
+      for (const item of numbered) {
+        killProcess(`wa:conv:${item.number}`);
+        clearClarificationState(`wa:conv:${item.number}`);
+        killed = true;
+      }
+      killed = killProcess(`wa:chat:${jid}`) || killed;
+      clearClarificationState(`wa:chat:${jid}`);
+    }
+    const label = parsed.number !== null ? `Conversation #${parsed.number}` : 'All conversations';
+    return { response: `${label} paused.${killed ? '' : ' (nothing was running)'}`, sender, prompt, jid };
   }
 
   // Handle status command (show active processes)
@@ -302,7 +306,7 @@ export async function handleMessage(message, emitLog) {
     };
   } catch (err) {
     if (err.stopped) {
-      return null; // Stop handler already returned a response
+      throw err; // Re-throw so whatsapp-client skips the error fallback
     }
     // If resume failed, retry with a fresh session
     if (resumeSessionId) {

@@ -39,13 +39,13 @@ function save() {
 /**
  * Parse a message for a leading conversation number.
  * "1 build a site"  → { number: 1, command: 'message', body: 'build a site' }
- * "1 close"         → { number: 1, command: 'close', body: '' }
+ * "1 new"           → { number: 1, command: 'new', body: '' }
  * "hello"           → { number: null, command: 'message', body: 'hello' }
  */
 export function parseMessage(text) {
-  const closeMatch = text.match(/^(\d+)\s+close$/i);
-  if (closeMatch) {
-    return { number: parseInt(closeMatch[1], 10), command: 'close', body: '' };
+  const newMatch = text.match(/^(\d+)\s+new$/i);
+  if (newMatch) {
+    return { number: parseInt(newMatch[1], 10), command: 'new', body: '' };
   }
 
   const numberedStopMatch = text.match(/^(\d+)\s+\/?stop$/i);
@@ -66,9 +66,6 @@ export function parseMessage(text) {
     return { number: null, command: 'pause', body: '' };
   }
 
-  if (/^\/?new$/i.test(text)) {
-    return { number: null, command: 'new', body: '' };
-  }
 
   if (/^\/?status$/i.test(text)) {
     return { number: null, command: 'status', body: '' };

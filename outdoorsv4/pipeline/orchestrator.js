@@ -110,7 +110,7 @@ function detectFailure(response) {
   return FAILURE_PATTERNS.some(p => p.test(response));
 }
 
-export async function runPipeline(prompt, { onProgress, processKey, timeout, resumeSessionId, sessionContext, skipLearning }) {
+export async function runPipeline(prompt, { onProgress, processKey, timeout, resumeSessionId, sessionContext }) {
   const outputDir = config.outputDirectory;
   mkdirSync(outputDir, { recursive: true });
   const shortTermDir = sessionContext?.shortTermDir || outputDir;
@@ -132,7 +132,7 @@ export async function runPipeline(prompt, { onProgress, processKey, timeout, res
       onProgress: (type, data) => agg.forward('D', type, data),
       processKey: processKey ? `${processKey}:D` : null,
       timeout,
-      cwd: shortTermDir,
+      cwd: outputDir,
       resumeSessionId,
     });
 
@@ -293,7 +293,7 @@ export async function runPipeline(prompt, { onProgress, processKey, timeout, res
       onProgress: (type, data) => agg.forward('D', type, data),
       processKey: processKey ? `${processKey}:D` : null,
       timeout,
-      cwd: shortTermDir,
+      cwd: outputDir,
       resumeSessionId,
     });
 
@@ -345,7 +345,7 @@ export async function runPipeline(prompt, { onProgress, processKey, timeout, res
         const teacherResult2 = parseTeacherResult(phaseC2.response);
         for (const mem of teacherResult2.memories) {
           try {
-            writeMemory(mem.name, mem.category, mem.content);
+            await writeMemory(mem.name, mem.category, mem.content);
             newlyCreatedMemories.push(mem);
             // If this memory describes how to install a tool, run the install now
             await tryInstallFromMemory(mem, onProgress);
@@ -363,7 +363,7 @@ export async function runPipeline(prompt, { onProgress, processKey, timeout, res
           onProgress: (type, data) => agg.forward('D', type, data),
           processKey: processKey ? `${processKey}:D2` : null,
           timeout,
-          cwd: shortTermDir,
+          cwd: outputDir,
           resumeSessionId,
         });
         if (phaseD2.questionRequest) {
@@ -386,7 +386,7 @@ export async function runPipeline(prompt, { onProgress, processKey, timeout, res
   }
 
   // ── Post-task learning (fire-and-forget) ──
-  if (!skipLearning) learnInBackground(prompt, outputSpec, lastDResponse, lastDFullEvents, onProgress, processKey, timeout);
+  learnInBackground(prompt, outputSpec, lastDResponse, lastDFullEvents, onProgress, processKey, timeout);
 
   return {
     status: 'completed',
