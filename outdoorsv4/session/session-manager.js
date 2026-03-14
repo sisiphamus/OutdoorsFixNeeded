@@ -154,4 +154,4 @@ function cleanupDir(dir) {
 }
 
 // Periodic cleanup every 5 minutes
-setInterval(cleanupStaleSessions, 5 * 60 * 1000);
+setInterval(cleanupStaleSessions, 5 * 60 * 1000).unref();

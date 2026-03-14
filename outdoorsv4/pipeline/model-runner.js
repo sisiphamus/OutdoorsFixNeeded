@@ -64,10 +64,6 @@ export function runModel({
     const cmd = config.claudeCommand || 'claude';
     const args = [...(claudeArgs || config.claudeArgs || ['--print']), '--output-format', 'stream-json', '--verbose'];
 
-    // Always ensure critical flags are present (config may be stale in Electron deployments)
-    if (!args.includes('--dangerously-skip-permissions')) {
-      args.push('--dangerously-skip-permissions');
-    }
     if (!args.includes('--max-turns')) {
       args.push('--max-turns', String(maxTurns || 25));
     }

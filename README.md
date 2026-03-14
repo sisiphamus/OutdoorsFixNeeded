@@ -25,7 +25,12 @@ Prerequisites: Node.js 18+, Python 3.9+, [Claude CLI](https://docs.anthropic.com
 
 ```bash
 node setup.js
-cd outdoorsv1/backend && node server.js
+cd outdoorsv1/backend && node src/index.js
 ```
 
-The setup script installs all dependencies, configures MCP servers (Gmail, Calendar, Drive, Playwright), and sets up the backend. First time using Google services, Claude will prompt you to sign in.
+The setup script walks you through everything interactively:
+
+1. **Browser choice** -- Chrome or Edge. Creates a separate automation profile with your existing cookies/sessions copied over (required for Chrome 136+ CDP support).
+2. **Google login** -- Opens the automation browser so you can sign in (or verify you're already signed in from copied cookies).
+3. **Google Cloud OAuth** -- Guides you through creating OAuth credentials in Google Cloud Console so Outdoors can access Gmail, Calendar, Drive, etc.
+4. **Dependencies** -- Installs npm packages and Python ML dependencies automatically.

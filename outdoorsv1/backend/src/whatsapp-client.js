@@ -310,15 +310,17 @@ async function startWhatsApp() {
       // Store incoming messages so getMessage can fulfill group retry requests
       if (msg.message) storeMessage(msgId, msg.message);
 
-      // Only process messages from the Outdoors group — ignore all DMs and other groups
       const remoteJid = msg.key.remoteJid;
-      if (!config.outdoorsGroupJid || remoteJid !== config.outdoorsGroupJid) {
-        console.log(`[wa:skip] Message from ${remoteJid} not in Outdoors group (${config.outdoorsGroupJid || 'not set'})`);
+      const isGroup = remoteJid?.endsWith('@g.us');
+
+      // If outdoorsGroupJid is configured, only accept messages from that group
+      // Otherwise, accept DMs and all groups
+      if (config.outdoorsGroupJid && isGroup && remoteJid !== config.outdoorsGroupJid) {
+        console.log(`[wa:skip] Message from group ${remoteJid} (not the configured group)`);
         continue;
       }
 
       // Skip messages sent by us UNLESS it's a group (solo group for self-messaging)
-      const isGroup = remoteJid?.endsWith('@g.us');
       if (msg.key.fromMe && !isGroup) {
         continue;
       }

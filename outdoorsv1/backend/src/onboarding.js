@@ -10,18 +10,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROFILE_PATH = join(__dirname, '..', 'bot', 'memory', 'preferences', 'user-profile.md');
 const BROWSER_PREFS_PATH = join(__dirname, '..', 'bot', 'memory', 'preferences', 'browser-preferences.md');
 const PROJECT_ROOT = resolve(__dirname, '..', '..', '..');
-const WRITING_VOICE_PATH = join(__dirname, '..', 'bot', 'memory', 'skills', 'Adams Writing Voice', 'SKILL.md');
-
 // In-memory onboarding session tracking (sessionId for --resume)
 const onboardingSessions = new Map();
-
-// Load writing voice content at module load time
-let writingVoiceContent = '';
-try {
-  writingVoiceContent = readFileSync(WRITING_VOICE_PATH, 'utf-8');
-} catch {
-  console.log('[onboarding] Could not read writing voice skill file, skipping');
-}
 
 const ONBOARDING_SYSTEM_PROMPT = `You are Outdoors, a personal AI assistant meeting your user for the first time. Casual, direct, no corporate polish. Brief reactions, light personality. No rants or tangents.
 
@@ -57,7 +47,7 @@ Then IMMEDIATELY after, on the same output, add the marker and structured profil
 - **Outdoor vibe:** ...
 
 ## Writing Style
-${writingVoiceContent ? `The following is their writing voice profile, captured from their own writing samples:\n${writingVoiceContent}` : '- **Status:** Not yet captured'}
+- **Status:** Not yet captured
 
 Fill in what you learned. Use "Not shared" for anything they skipped. Leave out fields that don't apply (e.g. School fields for professionals). Do NOT make up information.`;
 
@@ -93,7 +83,7 @@ export async function handleOnboardingMessage(text, chatKey) {
     resumeSessionId,
     processKey: `onboarding:${chatKey}`,
     cwd: PROJECT_ROOT,
-    claudeArgs: ['--print', '--dangerously-skip-permissions'],
+    claudeArgs: ['--print'],
     skipMcp: true,
     onProgress: (type, data) => {
       console.log(`[onboarding:${type}]`, JSON.stringify(data).slice(0, 200));

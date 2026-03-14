@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const INFER_SCRIPT = join(__dirname, '../ml/infer.py');
-const PYTHON = process.env.OUTDOORS_PYTHON || 'python';
+const PYTHON = process.env.OUTDOORS_PYTHON || process.env.PEPPER_PYTHON || 'python';
 const CALL_TIMEOUT_MS = 30000;
 const POOL_SIZE = 2;
 
